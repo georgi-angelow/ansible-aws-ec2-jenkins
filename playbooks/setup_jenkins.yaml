@@ -1,0 +1,47 @@
+---
+- name: Install Jenkins
+  hosts: jenkins
+  remote_user: root
+  become: true
+  tasks:
+    - name: Install epel
+      command: amazon-linux-extras install epel -y 
+    - name: Install yum
+      yum:
+        name:
+          - wget
+          - java-1.8.0-openjdk-devel
+    - name: Ensure Jenkins repository is added
+      yum_repository:
+        name: jenkins-ci
+        description: jenkins-ci package repository
+        baseurl: http://pkg.jenkins.io/redhat
+        gpgkey: https://pkg.jenkins.io/redhat/jenkins.io.key
+        gpgcheck: yes
+    - name: Ensure gpp key is imported
+      rpm_key:
+        state: present
+        key: https://pkg.jenkins.io/redhat/jenkins.io.key
+    - name: Ensure Jenkins and java-devel package installed
+      yum:
+        name: '{{ packages }}'
+        state: present
+        update_cache: true
+      vars:
+            packages:
+              - jenkins
+              - java-devel
+    - name: Start & Enable Jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: true
+    - name: Sleep for 30 seconds and continue with play
+      wait_for: timeout=30
+    - name: Get init password Jenkins
+      shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+      changed_when: false
+      register: result
+    - name: Print init password Jenkins
+      debug:
+        var: result.stdout

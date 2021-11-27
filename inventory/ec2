@@ -1,0 +1,2 @@
+[jenkins]
+PUBLIC_IP ansible_user=root
